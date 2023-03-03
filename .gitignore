@@ -33,3 +33,5 @@ kino_openai-*.tar
 /tmp/
 
 .DS_Store
+
+node_modules

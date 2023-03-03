@@ -6,6 +6,11 @@ defmodule KinoOpenAi.TaskCell do
   use Kino.JS.Live
   use Kino.SmartCell, name: "OpenAi task"
 
+  @creds %{
+    openai_secret_key: nil,
+    openai_organization_id: nil
+  }
+
   @tasks [
     %{
       id: "text_completion",
@@ -48,7 +53,8 @@ defmodule KinoOpenAi.TaskCell do
 
     {:ok,
      assign(ctx,
-       fields: fields
+       fields: fields,
+       creds: @creds
      )}
   end
 
@@ -65,8 +71,23 @@ defmodule KinoOpenAi.TaskCell do
     {:ok,
      %{
        fields: ctx.assigns.fields,
-       tasks: tasks()
+       tasks: tasks(),
+       creds: ctx.assigns.creds
      }, ctx}
+  end
+
+  @impl true
+  def handle_event("update_openai_secret_key", value, ctx) do
+    broadcast_event(ctx, "update_openai_secret_key", value)
+    ctx = update(ctx, :creds, &Map.merge(&1, %{"openai_secret_key" => value}))
+    {:noreply, ctx}
+  end
+
+  @impl true
+  def handle_event("update_openai_organization_id", value, ctx) do
+    broadcast_event(ctx, "update_openai_organization_id", value)
+    ctx = update(ctx, :creds, &Map.merge(&1, %{"openai_organization_id" => value}))
+    {:noreply, ctx}
   end
 
   @impl true
@@ -144,7 +165,7 @@ defmodule KinoOpenAi.TaskCell do
         Application.put_env(
           :openai,
           :api_key,
-          "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"
+          System.fetch_env!("LB_OPEN_AI_API_KEY")
         )
       end,
       quote do

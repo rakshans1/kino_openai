@@ -1,10 +1,65 @@
-console.log("hi");
+import React from "react";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "../css/main.css";
+
+interface AppProps {
+  ctx: any;
+  payload: any;
+}
+
+const App = (props: AppProps) => {
+  const { ctx, payload } = props;
+
+  const { fields } = payload;
+  const selectedTask = payload.tasks.find((task) => task.id === fields.task_id);
+
+  const selectedVariant = selectedTask.variants.find(
+    (variant) => variant.id === fields.variant_id
+  );
+
+  return (
+    <div class="app">
+      <div class="container">
+        <div
+          class="header"
+          onClick={() =>
+            ctx.selectSecret((openai_secret_key: string) => {
+              ctx.pushEvent("update_openai_secret_key", openai_secret_key);
+            }, "OPEN_AI_API_KEY")
+          }
+        >
+          <a
+            class="icon-button"
+            href={selectedVariant.docs_url}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <img src={selectedVariant.docs_logo} />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export async function init(ctx, payload) {
+  console.log(ctx, payload);
+  await ctx.importCSS("./main.css");
+
+  const root = createRoot(ctx.root);
+
+  root.render(
+    <StrictMode>
+      <App ctx={ctx} payload={payload} />
+    </StrictMode>
+  );
+}
 
 // import * as Vue from "https://cdn.jsdelivr.net/npm/vue@3.2.26/dist/vue.esm-browser.prod.js";
 
 // export async function init(ctx, payload) {
 //   await Promise.all([
-//     ctx.importCSS("main.css"),
 //     ctx.importCSS(
 //       "https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap"
 //     ),

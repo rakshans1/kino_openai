@@ -5,8 +5,7 @@
 ```elixir
 Mix.install(
   [
-    {:kino_openai, path: "/Users/rakshan/projects/elixir/smartcells/kino_openai"},
-    {:kino_slack, "~> 0.1.0"}
+    {:kino_openai, path: "/Users/rakshan/projects/elixir/smartcells/kino_openai"}
   ],
   force: true
 )
@@ -16,49 +15,26 @@ Mix.install(
 
 ```
 Resolving Hex dependencies...
-Resolution completed in 0.191s
+Resolution completed in 0.119s
 New:
-  castore 0.1.22
   certifi 2.9.0
   file_system 0.2.10
-  finch 0.14.0
   hackney 1.18.1
-  hpax 0.1.2
   httpoison 1.8.2
   idna 6.1.1
-  jason 1.4.0
   json 1.4.1
   kino 0.8.1
-  kino_slack 0.1.0
   meck 0.9.2
   metrics 1.0.1
-  mime 2.0.3
   mimerl 1.2.0
-  mint 1.5.0
   mix_test_watch 1.1.0
   mock 0.3.7
-  nimble_options 0.5.2
-  nimble_pool 0.2.6
   openai 0.2.3
   parse_trans 3.3.1
-  req 0.3.5
   ssl_verify_fun 1.1.6
   table 0.1.2
-  telemetry 1.2.1
   unicode_util_compat 0.7.0
-* Getting kino_slack (Hex package)
 * Getting kino (Hex package)
-* Getting req (Hex package)
-* Getting finch (Hex package)
-* Getting jason (Hex package)
-* Getting mime (Hex package)
-* Getting castore (Hex package)
-* Getting mint (Hex package)
-* Getting nimble_options (Hex package)
-* Getting nimble_pool (Hex package)
-* Getting telemetry (Hex package)
-* Getting hpax (Hex package)
-* Getting table (Hex package)
 * Getting openai (Hex package)
 * Getting httpoison (Hex package)
 * Getting json (Hex package)
@@ -74,22 +50,17 @@ New:
 * Getting parse_trans (Hex package)
 * Getting ssl_verify_fun (Hex package)
 * Getting unicode_util_compat (Hex package)
+* Getting table (Hex package)
 
-12:52:53.232 [info] Compiling file system watcher for Mac...
+23:57:58.289 [info] Compiling file system watcher for Mac...
 
-12:52:54.129 [info] Done.
+23:57:59.062 [info] Done.
 ==> file_system
 Compiling 7 files (.ex)
 Generated file_system app
 ==> table
 Compiling 5 files (.ex)
 Generated table app
-==> mime
-Compiling 1 file (.ex)
-Generated mime app
-==> nimble_options
-Compiling 3 files (.ex)
-Generated nimble_options app
 ==> kino
 Compiling 37 files (.ex)
 Generated kino app
@@ -97,11 +68,6 @@ Generated kino app
 ===> Compiling unicode_util_compat
 ===> Analyzing applications...
 ===> Compiling idna
-===> Analyzing applications...
-===> Compiling telemetry
-==> jason
-Compiling 10 files (.ex)
-Generated jason app
 ==> json
 Compiling 13 files (.ex)
 warning: use Bitwise is deprecated. import Bitwise instead
@@ -114,9 +80,6 @@ Generated json app
 ==> mix_test_watch
 Compiling 8 files (.ex)
 Generated mix_test_watch app
-==> hpax
-Compiling 4 files (.ex)
-Generated hpax app
 ===> Analyzing applications...
 ===> Compiling mimerl
 ===> Analyzing applications...
@@ -131,29 +94,10 @@ Generated ssl_verify_fun app
 ===> Compiling certifi
 ===> Analyzing applications...
 ===> Compiling parse_trans
-==> nimble_pool
-Compiling 2 files (.ex)
-Generated nimble_pool app
 ===> Analyzing applications...
 ===> Compiling metrics
 ===> Analyzing applications...
 ===> Compiling hackney
-==> castore
-Compiling 1 file (.ex)
-Generated castore app
-==> mint
-Compiling 1 file (.erl)
-Compiling 19 files (.ex)
-Generated mint app
-==> finch
-Compiling 13 files (.ex)
-Generated finch app
-==> req
-Compiling 5 files (.ex)
-Generated req app
-==> kino_slack
-Compiling 2 files (.ex)
-Generated kino_slack app
 ==> httpoison
 Compiling 3 files (.ex)
 Generated httpoison app
@@ -163,7 +107,7 @@ Generated openai app
 ==> kino_openai
 Compiling 2 files (.ex)
 warning: variable "opts" is unused (if the variable is not meant to be used, prefix it with an underscore)
-  lib/kino_openai/task_cell.ex:134: KinoOpenAi.TaskCell.to_quoted/1
+  lib/kino_openai/task_cell.ex:155: KinoOpenAi.TaskCell.to_quoted/1
 
 Generated kino_openai app
 ```
@@ -176,14 +120,10 @@ Generated kino_openai app
 
 ## OpenAI
 
-<!-- livebook:{"attrs":{},"chunks":[[0,101],[103,701]],"kind":"Elixir.KinoOpenAi.TaskCell","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{},"chunks":[[0,79],[81,701]],"kind":"Elixir.KinoOpenAi.TaskCell","livebook_object":"smart_cell"} -->
 
 ```elixir
-Application.put_env(
-  :openai,
-  :api_key,
-  "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"
-)
+Application.put_env(:openai, :api_key, System.fetch_env!("LB_OPEN_AI_API_KEY"))
 
 text_input = Kino.Input.textarea("Text", default: "Yesterday, I was reading a book and")
 form = Kino.Control.form([text: text_input], submit: "Run")
