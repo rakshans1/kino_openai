@@ -1,10 +1,21 @@
-# Elixir Starter
+# KinoOpenai
 
-## 🏗️ Prerequisites
+**TODO: Add description**
 
-- [nix](https://nix.dev/tutorials/install-nix)
-- [direnv](https://direnv.net/docs/installation.html)
+## Installation
 
-Setup direnv with [shell](https://direnv.net/docs/hook.html)
+If [available in Hex](https://hex.pm/docs/publish), the package can be installed
+by adding `kino_openai` to your list of dependencies in `mix.exs`:
 
-Run `direnv allow`
+```elixir
+def deps do
+  [
+    {:kino_openai, "~> 0.1.0"}
+  ]
+end
+```
+
+Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
+and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
+be found at <https://hexdocs.pm/kino_openai>.
+

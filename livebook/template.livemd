@@ -1,0 +1,61 @@
+<!-- livebook:{"persist_outputs":true} -->
+
+# Kino OpenAI
+
+```elixir
+Mix.install([
+  {:kino_openai, path: "/Users/rakshan/projects/elixir/smartcells/kino_openai"}
+])
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+==> kino_openai
+Compiling 1 file (.ex)
+warning: clauses with the same name and arity (number of arguments) should be grouped together, "defp parse_value/2" was previously defined (lib/kino_openai/task_cell.ex:127)
+  lib/kino_openai/task_cell.ex:143
+
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+:ok
+```
+
+## OpenAI
+
+<!-- livebook:{"attrs":{"max_length":500,"openai_organization_id":"OPEN_AI_ORGANIZATION_ID","openai_secret_key":"OPEN_AI_API_KEY","task_id":"text_completion","temperature":0.7,"variant_id":"text-davinci-003"},"chunks":[[0,936]],"kind":"Elixir.KinoOpenAi.TaskCell","livebook_object":"smart_cell"} -->
+
+```elixir
+Application.put_env(:openai, :api_key, System.fetch_env!("LB_" <> "OPEN_AI_API_KEY"))
+
+Application.put_env(
+  :openai,
+  :organization_key,
+  System.fetch_env!("LB_" <> "OPEN_AI_ORGANIZATION_ID")
+)
+
+text_input = Kino.Input.textarea("Prompt", default: "Yesterday, I was reading a book and")
+form = Kino.Control.form([text: text_input], submit: "Run")
+frame = Kino.Frame.new()
+
+form
+|> Kino.Control.stream()
+|> Kino.listen(fn %{data: %{text: text}} ->
+  Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
+  opts = [temperature: 0.7, max_tokens: 500, prompt: text]
+
+  case OpenAI.completions("text-davinci-003", opts) do
+    {:ok, result} ->
+      t = result |> Map.get(:choices) |> Enum.at(0) |> Map.get("text")
+      Kino.Frame.render(frame, Kino.Markdown.new(t))
+
+    {:error, error} ->
+      Kino.Frame.render(frame, Kino.Markdown.new(error |> Kernel.inspect()))
+  end
+end)
+
+Kino.Layout.grid([form, frame], boxed: true, gap: 16)
+```
