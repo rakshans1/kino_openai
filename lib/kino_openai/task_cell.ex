@@ -6,10 +6,15 @@ defmodule KinoOpenAi.TaskCell do
   use Kino.JS.Live
   use Kino.SmartCell, name: "OpenAi task"
 
-  @creds %{
-    openai_secret_key: nil,
-    openai_organization_id: nil
-  }
+  @creds [
+    %{field: "openai_secret_key", label: "Secret Key", type: :secret, default: "OPEN_AI_API_KEY"},
+    %{
+      field: "openai_organization_id",
+      label: "Organization ID",
+      type: :secret,
+      default: "OPEN_AI_ORGANIZATION_ID"
+    }
+  ]
 
   @tasks [
     %{
@@ -28,7 +33,7 @@ defmodule KinoOpenAi.TaskCell do
         }
       ],
       params: [
-        %{field: "temperature", label: "Temperature", type: :number, default: 0.6},
+        %{field: "temperature", label: "Temperature", type: :float, default: 0.6},
         %{field: "max_length", label: "Max Length", type: :number, default: 150}
       ]
     }
@@ -43,7 +48,9 @@ defmodule KinoOpenAi.TaskCell do
 
     fields = %{
       "task_id" => task_id,
-      "variant_id" => attrs["variant_id"] || @default_variant_id
+      "variant_id" => attrs["variant_id"] || @default_variant_id,
+      "openai_secret_key" => cred_by_field("openai_secret_key")[:default] || nil,
+      "openai_organization_id" => cred_by_field("openai_organization_id")[:default] || nil
     }
 
     fields =
@@ -53,8 +60,7 @@ defmodule KinoOpenAi.TaskCell do
 
     {:ok,
      assign(ctx,
-       fields: fields,
-       creds: @creds
+       fields: fields
      )}
   end
 
@@ -72,22 +78,8 @@ defmodule KinoOpenAi.TaskCell do
      %{
        fields: ctx.assigns.fields,
        tasks: tasks(),
-       creds: ctx.assigns.creds
+       creds: creds()
      }, ctx}
-  end
-
-  @impl true
-  def handle_event("update_openai_secret_key", value, ctx) do
-    broadcast_event(ctx, "update_openai_secret_key", value)
-    ctx = update(ctx, :creds, &Map.merge(&1, %{"openai_secret_key" => value}))
-    {:noreply, ctx}
-  end
-
-  @impl true
-  def handle_event("update_openai_organization_id", value, ctx) do
-    broadcast_event(ctx, "update_openai_organization_id", value)
-    ctx = update(ctx, :creds, &Map.merge(&1, %{"openai_organization_id" => value}))
-    {:noreply, ctx}
   end
 
   @impl true
@@ -95,6 +87,7 @@ defmodule KinoOpenAi.TaskCell do
     task = task_by_id(task_id)
     variant_id = hd(task.variants).id
     param_fields = field_defaults_for(task_id)
+    fields = ctx.assigns.fields
 
     fields =
       Map.merge(
@@ -102,7 +95,8 @@ defmodule KinoOpenAi.TaskCell do
           "task_id" => task_id,
           "variant_id" => variant_id
         },
-        param_fields
+        param_fields,
+        fields
       )
 
     ctx = assign(ctx, fields: fields)
@@ -131,7 +125,20 @@ defmodule KinoOpenAi.TaskCell do
   defp to_updates(field, value, param), do: %{field => parse_value(value, param)}
 
   defp parse_value("", _param), do: nil
-  defp parse_value(value, %{type: :number}), do: String.to_integer(value)
+
+  defp parse_value(value, %{type: :number}) when not is_integer(value),
+    do: String.to_integer(value)
+
+  defp parse_value(value, %{type: :float}) do
+    parse_float(value)
+  end
+
+  defp parse_float(str) do
+    case str |> Float.parse() do
+      {value, _} -> value
+      :error -> str
+    end
+  end
 
   defp parse_value(value, %{type: :select, options: options}) do
     Enum.find_value(options, fn option ->
@@ -160,16 +167,24 @@ defmodule KinoOpenAi.TaskCell do
 
     %{generation: generation} = variant_from_attrs(attrs)
 
+    secret_key = attrs["openai_secret_key"]
+    organization_id = attrs["openai_organization_id"]
+
     [
       quote do
         Application.put_env(
           :openai,
           :api_key,
-          System.fetch_env!("LB_OPEN_AI_API_KEY")
+          System.fetch_env!("LB_" <> unquote(secret_key))
         )
-      end,
-      quote do
-        text_input = Kino.Input.textarea("Text", default: unquote(generation.default_text))
+
+        Application.put_env(
+          :openai,
+          :organization_key,
+          System.fetch_env!("LB_" <> unquote(organization_id))
+        )
+
+        text_input = Kino.Input.textarea("Prompt", default: unquote(generation.default_text))
         form = Kino.Control.form([text: text_input], submit: "Run")
 
         frame = Kino.Frame.new()
@@ -178,8 +193,12 @@ defmodule KinoOpenAi.TaskCell do
         |> Kino.Control.stream()
         |> Kino.listen(fn %{data: %{text: text}} ->
           Kino.Frame.render(frame, Kino.Markdown.new("Running..."))
+          opts = [unquote_splicing(opts), prompt: text]
 
-          case OpenAI.completions("text-davinci-003", prompt: text, max_tokens: 150) do
+          case OpenAI.completions(
+                 "text-davinci-003",
+                 opts
+               ) do
             {:ok, result} ->
               t = result |> Map.get(:choices) |> Enum.at(0) |> Map.get("text")
               Kino.Frame.render(frame, Kino.Markdown.new(t))
@@ -204,6 +223,8 @@ defmodule KinoOpenAi.TaskCell do
 
   defp tasks(), do: @tasks
 
+  defp creds(), do: @creds
+
   defp task_by_id(task_id) do
     Enum.find(tasks(), &(&1.id == task_id))
   end
@@ -215,5 +236,9 @@ defmodule KinoOpenAi.TaskCell do
 
   defp variant_from_attrs(attrs) do
     variant_by_id(attrs["task_id"], attrs["variant_id"])
+  end
+
+  defp cred_by_field(field) do
+    Enum.find(creds(), &(&1.field == field))
   end
 end

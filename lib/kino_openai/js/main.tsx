@@ -1,34 +1,132 @@
 import React from "react";
-import { StrictMode } from "react";
+import { StrictMode, useCallback, useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "../css/main.css";
 
-interface AppProps {
-  ctx: any;
-  payload: any;
+type Ctx = any;
+
+interface TaskVariant {
+  id: string;
+  label: string;
+  docs_logo: string;
+  docs_url: string;
 }
+
+interface TaskParam {
+  field: string;
+  label: string;
+  type: string;
+  default: string;
+}
+
+interface Task {
+  id: string;
+  label: string;
+  variants: TaskVariant[];
+  params: TaskParam[];
+}
+
+interface Cred {
+  default: string;
+  field: string;
+  label: string;
+  type: string;
+}
+
+interface AppProps {
+  ctx: Ctx;
+  payload: {
+    creds: Cred[];
+    fields: {
+      task_id: string;
+      variant_id: string;
+      openai_secret_key: string;
+      openai_organization_id: string;
+    };
+    tasks: Task[];
+  };
+}
+
+interface CredInputProps {
+  cred: Cred;
+  value: string;
+  ctx: Ctx;
+}
+
+const CredInput = (props: CredInputProps) => {
+  const { cred, ctx, value } = props;
+
+  const handleClick = useCallback(() => {
+    ctx.selectSecret((value: string) => {
+      console.log(value);
+      ctx.pushEvent("update_field", { field: cred.field, value });
+    }, cred.default);
+  }, []);
+
+  return (
+    <div className="inline-field">
+      <label className="inline-input-label">{cred.label}</label>
+      <input value={value} className="input input--xs" onClick={handleClick} />
+    </div>
+  );
+};
+
+interface InputProps {
+  param: TaskParam;
+  value: string;
+  ctx: Ctx;
+}
+
+const Input = (props: InputProps) => {
+  const { param, ctx, value } = props;
+
+  const handleChange = useCallback((event) => {
+    ctx.pushEvent("update_field", {
+      field: param.field,
+      value: event.target.value,
+    });
+  }, []);
+
+  return (
+    <div className="inline-field">
+      <label className="inline-input-label">{param.label}</label>
+      <input
+        value={value}
+        className="input input--xs"
+        onChange={handleChange}
+        type="number"
+      />
+    </div>
+  );
+};
 
 const App = (props: AppProps) => {
   const { ctx, payload } = props;
 
-  const { fields } = payload;
-  const selectedTask = payload.tasks.find((task) => task.id === fields.task_id);
+  const [fields, setFields] = useState(payload.fields);
+
+  const { creds } = payload;
+  const selectedTask = payload.tasks.find(
+    (task) => task.id === fields.task_id
+  )!;
 
   const selectedVariant = selectedTask.variants.find(
     (variant) => variant.id === fields.variant_id
-  );
+  )!;
+
+  const params = selectedTask.params;
+
+  useEffect(() => {
+    ctx.handleEvent("update", (payload: { fields: any }) => {
+      const { fields: updatedFields } = payload;
+      setFields((fields) => ({ ...fields, ...updatedFields }));
+    });
+  }, [ctx]);
 
   return (
     <div class="app">
       <div class="container">
-        <div
-          class="header"
-          onClick={() =>
-            ctx.selectSecret((openai_secret_key: string) => {
-              ctx.pushEvent("update_openai_secret_key", openai_secret_key);
-            }, "OPEN_AI_API_KEY")
-          }
-        >
+        <div class="header">
           <a
             class="icon-button"
             href={selectedVariant.docs_url}
@@ -37,6 +135,18 @@ const App = (props: AppProps) => {
           >
             <img src={selectedVariant.docs_logo} />
           </a>
+          <div className="inline-field">
+            {creds.map((cred) => {
+              const value = fields[cred.field];
+              return <CredInput cred={cred} ctx={ctx} value={value} />;
+            })}
+          </div>
+        </div>
+        <div className="row inline-field">
+          {params.map((param) => {
+            const value = fields[param.field];
+            return <Input param={param} ctx={ctx} value={value} />;
+          })}
         </div>
       </div>
     </div>
